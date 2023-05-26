@@ -20,16 +20,25 @@ elif [[ ! -w $inputFile ]]; then
 fi
 
 # If there are duplicate names the keep only the first vote
-sort -k1,1 -fsu $inputFile | tee $inputFile
+sort -k1,1 -k2,2 -fsu -o $inputFile $inputFile
 
-names=`cut -d " " -f '1 2' $inputFile`
-echo "$names"
+partyNames=`cut -d " " -f3 $inputFile | sort | uniq`
 
-# i=1
-# while read line; do
-# # reading each line
-# echo "Line No. $i : $line"
-# i=$((i+1))
-# done < $inputFile
+# define an array with the parties
+arrayname=( $partyNames)
+ 
+# Create a the tally results file
+: > $tallyResultsFile
+
+# get item count using ${arrayname[@]}
+for m in "${arrayname[@]}"
+do
+  # This will be the party
+  line="${m}"
+  line+=" "
+  # This will be the number of occurencies of the party
+  line+=`grep ${m} $inputFile | wc -l`
+  echo "$line" >> "$tallyResultsFile"
+done
 
 echo "all went ok"
