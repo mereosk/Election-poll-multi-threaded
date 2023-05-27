@@ -8,22 +8,36 @@ CC = gcc
 # Compile options. Το -I<dir> λέει στον compiler να αναζητήσει εκεί include files
 CFLAGS = -Wall  -g -I$(INCLUDE)
 LDFLAGS = 
-ARGS = 3 2 1 poll-log.txt poll-stats.txt
+ARGSSERVER = 3 2 1 poll-log.txt poll-stats.txt
+ARGSCLIENT = linux01.di.uoa.gr 5634 inputFile.txt
 
 # Αρχεία .o
-OBJS = $(PROGRAM)/poller.o $(MODULES)/ADTList.o $(MODULES)/ADTVector.o $(MODULES)/ADTMap.o $(MODULES)/helpingFuncs.o
+OBJSSERVER = $(PROGRAM)/poller.o $(MODULES)/ADTList.o $(MODULES)/ADTVector.o $(MODULES)/ADTMap.o $(MODULES)/helpingFuncs.o
+OBJSCLIENT = $(PROGRAM)/pollSwayer.o $(MODULES)/helpingFuncs.o
 
-# Το εκτελέσιμο πρόγραμμα
-EXEC = $(PROGRAM)/poller
+# Τα εκτελέσιμα πρόγραμματα
+EXECSERVER = $(PROGRAM)/poller
+EXECCLIENT = $(PROGRAM)/pollSwayer
 
-$(EXEC): $(OBJS)
-	$(CC) $(OBJS) -o $(EXEC)
+all: $(EXECSERVER) $(EXECCLIENT)
+
+$(EXECSERVER): $(OBJSSERVER)
+	$(CC) $(OBJSSERVER) -o $(EXECSERVER)
+
+$(EXECCLIENT): $(OBJSCLIENT)
+	$(CC) $(OBJSCLIENT) -o $(EXECCLIENT)
 
 clean:
-	rm -f $(OBJS) $(EXEC)
+	rm -f $(OBJSSERVER) $(EXECSERVER) $(OBJSCLIENT) $(EXECCLIENT)
 
-run: $(EXEC)
-	$(EXEC) $(ARGS)
+runServer: $(EXECSERVER)
+	$(EXECSERVER) $(ARGSSERVER)
 
-valgrind: $(EXEC)
-	valgrind --leak-check=full --track-origins=yes $(EXEC) $(ARGS)
+valgrindServer: $(EXECSERVER)
+	valgrind --leak-check=full --track-origins=yes $(EXECSERVER) $(ARGSSERVER)
+
+runClient: $(EXECCLIENT)
+	$(EXECCLIENT) $(ARGSCLIENT)
+
+valgrindClient: $(EXECCLIENT)
+	valgrind --leak-check=full --track-origins=yes $(EXECCLIENT) $(ARGSCLIENT)

@@ -5,7 +5,7 @@
 
 #include "helpingFuncs.h"
 
-bool checkArguments(int argc, char **argv, int *portnum, int *numWorkerThreads, int *bufferSize) {
+bool checkArgumentsServer(int argc, char **argv, int *portnum, int *numWorkerThreads, int *bufferSize) {
     // Check that the arguments are 6, the correct format is:
     // ./poller [portnum] [numWorkerthreads] [bufferSize] [poll-log] [poll-stats]
     if( argc!=6 ) {
@@ -31,4 +31,8 @@ bool checkArguments(int argc, char **argv, int *portnum, int *numWorkerThreads, 
 
     // The arguments were correct
     return true;
+}
+
+bool checkArgumentsClient(int argc, char **argv, char *serverName, int *portNum, char *inputFile) {
+    
 }
