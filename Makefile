@@ -8,8 +8,8 @@ CC = gcc
 # Compile options. Το -I<dir> λέει στον compiler να αναζητήσει εκεί include files
 CFLAGS = -Wall  -g -I$(INCLUDE)
 LDFLAGS = 
-ARGSSERVER = 3 2 1 poll-log.txt poll-stats.txt
-ARGSCLIENT = linux01.di.uoa.gr 5634 inputFile.txt
+ARGSSERVER = 5634 2 1 poll-log.txt poll-stats.txt
+ARGSCLIENT = mereosk-Latitude-E7440 5634 inputFile.txt
 
 # Αρχεία .o
 OBJSSERVER = $(PROGRAM)/poller.o $(MODULES)/ADTList.o $(MODULES)/ADTVector.o $(MODULES)/ADTMap.o $(MODULES)/helpingFuncs.o
@@ -30,14 +30,14 @@ $(EXECCLIENT): $(OBJSCLIENT)
 clean:
 	rm -f $(OBJSSERVER) $(EXECSERVER) $(OBJSCLIENT) $(EXECCLIENT)
 
-runServer: $(EXECSERVER)
+server: $(EXECSERVER)
 	$(EXECSERVER) $(ARGSSERVER)
 
-valgrindServer: $(EXECSERVER)
+valserver: $(EXECSERVER)
 	valgrind --leak-check=full --track-origins=yes $(EXECSERVER) $(ARGSSERVER)
 
-runClient: $(EXECCLIENT)
+client: $(EXECCLIENT)
 	$(EXECCLIENT) $(ARGSCLIENT)
 
-valgrindClient: $(EXECCLIENT)
+valclient: $(EXECCLIENT)
 	valgrind --leak-check=full --track-origins=yes $(EXECCLIENT) $(ARGSCLIENT)
