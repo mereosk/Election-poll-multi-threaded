@@ -13,19 +13,30 @@
 
 #include "helpingFuncs.h"
 
+FILE *fdPollLog, *fdPollStats;
+
 void child_server(int newsock);
 void perror_exit(char *message);
 void sigchld_handler (int sig);
+void catchInterupt(int signo) {
+    printf("Im here\n");
+    fclose(fdPollLog); fclose(fdPollStats);
+}
 
 int main(int argc, char **argv) {
     int portnum, numWorkerThreads, bufferSize;
     char *pollLogFile, *pollStatsFile;
     int sock , newsock;
-    FILE *fdPollLog, *fdPollStats;
     struct sockaddr_in server , client ;
-    socklen_t clientlen ;
+    socklen_t clientlen=sizeof(client); ;
     struct sockaddr * serverptr =( struct sockaddr *) & server ;
     struct sockaddr * clientptr =( struct sockaddr *) & client ;
+
+    static struct sigaction act;
+    act.sa_handler=catchInterupt;
+    sigfillset(&(act.sa_mask));
+
+    sigaction(SIGINT, &act, NULL);
 
     if(checkArgumentsServer(argc, argv, &portnum, &numWorkerThreads, \
         &bufferSize, &pollLogFile, &pollStatsFile) == false)
@@ -38,7 +49,7 @@ int main(int argc, char **argv) {
         perror_exit("File opening");
     
     // Reap dead children asynchronously
-    signal(SIGCHLD, sigchld_handler);
+    // signal(SIGCHLD, sigchld_handler);
     /* Create socket */
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         perror_exit("socket");
@@ -68,8 +79,7 @@ int main(int argc, char **argv) {
     	close(newsock); /* parent closes socket to client */
     }
 
-    printf("Im here\n");
-    fclose(fdPollLog); fclose(fdPollStats);
+    
 
     return 0;
 }
@@ -77,13 +87,14 @@ int main(int argc, char **argv) {
 void child_server(int newsock) {
     char sendNameBuff[18]="SEND NAME PLEASE\n";
     char sendPartyBuff[18]="SEND VOTE PLEASE\n";
-    char name[64];
+    char nameSurname[64]="";
+    char party[64]="";
     if(write(newsock, sendNameBuff, 18) < 0) {
         perror_exit("write");
     }
-    if(read(newsock, name, 64) > 0) {  /* Receive 1 char */
+    if(read(newsock, nameSurname, 64) > 0) {  /* Receive 1 char */
     	// putchar(buf[0]);           /* Print received char */
-        fprintf(stderr, "Name is %s\n",name);
+        printf("Name is %s\n",nameSurname);
     	/* Capitalize character */
     	// buf[0] = toupper(buf[0]);
     	/* Reply */
@@ -93,9 +104,9 @@ void child_server(int newsock) {
     if(write(newsock, sendPartyBuff, 18) < 0) {
         perror_exit("write");
     }
-    if(read(newsock, name, 64) > 0) {  /* Receive 1 char */
+    if(read(newsock, party, 64) > 0) {  /* Receive 1 char */
     	// putchar(buf[0]);           /* Print received char */
-        fprintf(stderr, "Vote is %s\n",name);
+        printf("Vote is %s\n",party);
     	/* Capitalize character */
     	// buf[0] = toupper(buf[0]);
     	/* Reply */
