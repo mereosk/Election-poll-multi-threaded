@@ -9,7 +9,7 @@ CC = gcc
 # Compile options. Το -I<dir> λέει στον compiler να αναζητήσει εκεί include files
 CFLAGS = -Wall  -g -I$(INCLUDE)
 LDFLAGS = 
-ARGSSERVER = 5633 2 1 poll-log.txt poll-stats.txt
+ARGSSERVER = 5633 2 16 poll-log.txt poll-stats.txt
 ARGSCLIENT = mereosk-Latitude-E7440 5634 $(MISC)/inputFile.txt
 
 # Αρχεία .o
@@ -23,7 +23,7 @@ EXECCLIENT = $(PROGRAM)/pollSwayer
 all: $(EXECSERVER) $(EXECCLIENT)
 
 $(EXECSERVER): $(OBJSSERVER)
-	$(CC) $(OBJSSERVER) -o $(EXECSERVER) -lpthread
+	$(CC) $(OBJSSERVER) -o $(EXECSERVER) -lpthread 
 
 $(EXECCLIENT): $(OBJSCLIENT)
 	$(CC) $(OBJSCLIENT) -o $(EXECCLIENT) -lpthread
@@ -35,7 +35,7 @@ server: $(EXECSERVER)
 	$(EXECSERVER) $(ARGSSERVER)
 
 valserver: $(EXECSERVER)
-	valgrind --leak-check=full --track-origins=yes $(EXECSERVER) $(ARGSSERVER)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes $(EXECSERVER) $(ARGSSERVER)
 
 client: $(EXECCLIENT)
 	$(EXECCLIENT) $(ARGSCLIENT)

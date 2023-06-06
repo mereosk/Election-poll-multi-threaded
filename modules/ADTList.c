@@ -131,7 +131,7 @@ void print_list(List list) {
     lNode != LIST_EOF;
     lNode = list_next(list , lNode)
     ) {
-        fprintf(stderr,"->%d\n",*(int *)list_node_value(list, lNode));
+        fprintf(stdout,"->%d\n",*((int *)list_node_value(list, lNode)));
     }
 }
 
