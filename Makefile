@@ -9,7 +9,7 @@ CC = gcc
 # Compile options. Το -I<dir> λέει στον compiler να αναζητήσει εκεί include files
 CFLAGS = -Wall  -g -I$(INCLUDE)
 LDFLAGS = 
-ARGSSERVER = 5633 2 16 poll-log.txt poll-stats.txt
+ARGSSERVER = 5631 2 16 ./poll-log.txt poll-stats.txt
 ARGSCLIENT = mereosk-Latitude-E7440 5634 $(MISC)/inputFile.txt
 
 # Αρχεία .o

@@ -13,17 +13,19 @@
 #include <signal.h>          /* signal */
 #include <pthread.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include "helpingFuncs.h"
 #include "ADTQueue.h"
 
 #define perror2(s, e) fprintf(stderr, "%s: %s\n", strerror(e));
 
-FILE *fdPollLog, *fdPollStats;
+FILE *fdPollStats, *fdPollLog;
 Queue bufferQueue;
 pthread_t *tids;
 pthread_mutex_t mtx;
-pthread_mutex_t write_mtx;
+pthread_mutex_t writeMtx;
 pthread_cond_t cond_nonempty;
 pthread_cond_t cond_nonfull;
 int numWorkerThreads;
@@ -94,7 +96,10 @@ int main(int argc, char **argv) {
     bufferQueue = queue_create(free, bufferSize);
     
     // Open the files
-    if((fdPollLog = fopen(pollLogFile, "a")) == NULL)   
+    // if((fdPollLog = open(pollLogFile, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1)   
+    //     perror_exit("File opening");
+    // printf("The file is %s\n", pollLogFile);
+    if((fdPollLog = fopen(pollLogFile, "a")) == NULL)
         perror_exit("File opening");
     if((fdPollStats = fopen(pollStatsFile, "a")) == NULL)
         perror_exit("File opening");
@@ -196,6 +201,7 @@ int main(int argc, char **argv) {
     pthread_cond_destroy(&cond_nonempty);
     pthread_cond_destroy(&cond_nonfull);
     pthread_mutex_destroy(&mtx);
+    pthread_mutex_destroy(&writeMtx);
     printf("Im here\n");
 
     return 0;
@@ -260,14 +266,28 @@ void *worker_thread(void *value) {
 
     char sendNameBuff[18]="SEND NAME PLEASE\n";
     char sendPartyBuff[18]="SEND VOTE PLEASE\n";
+    char space[2] = " ";
+    char newLine[2] = "\n";
     char nameSurname[64]="";
     char party[64]="";
     if(write(socketDes, sendNameBuff, 18) < 0) {
         perror_exit("write");
     }
     if(read(socketDes, nameSurname, 64) > 0) {  /* Receive 1 char */
-    	// putchar(buf[0]);           /* Print received char */
         printf("Name is %s\n",nameSurname);
+        // for (ssize_t i = 0; i < strlen(nameSurname)+1; i++) {
+        //     if (nameSurname[i] == '\n') {
+        //         // Reached the end of the line
+        //         nameSurname[i] = '\0'; // Null-terminate the string if needed
+        //     }
+        // }   
+    	// putchar(buf[0]);           /* Print received char */
+        printf("Name is %s with %d\n",nameSurname, strlen(nameSurname)-1);
+
+        // Before writing to the file first lock the mutex
+        pthread_mutex_lock(&writeMtx);
+        fwrite(nameSurname, strlen(nameSurname)-2, 1, fdPollLog);
+        fwrite(space, strlen(space), 1, fdPollLog);
     	/* Capitalize character */
     	// buf[0] = toupper(buf[0]);
     	/* Reply */
@@ -280,6 +300,17 @@ void *worker_thread(void *value) {
     if(read(socketDes, party, 64) > 0) {  /* Receive 1 char */
     	// putchar(buf[0]);           /* Print received char */
         printf("Vote is %s\n",party);
+        fwrite(party, strlen(party)-2, 1, fdPollLog);
+        fwrite(newLine, strlen(newLine), 1, fdPollLog);
+        pthread_mutex_unlock(&writeMtx);
+
+        // Initialise a string that will get inserted in the map
+        // so that we can print the poll stats
+        // char *partyTBInerted;
+        // memcpy(partyTBInerted, party, strlen(party)-1);
+        // fprintf(stderr,"THE PARTY TO BE INSERTED IS %s OOOOO\n", partyTBInerted);
+        party[strlen(party) - 2] = '\0';
+        printf("The stirng is %s\n", party);
     	/* Capitalize character */
     	// buf[0] = toupper(buf[0]);
     	/* Reply */
