@@ -215,7 +215,25 @@ void map_print(Map map) {
     for(MapNode mNode=map_first(map);
     mNode != MAP_EOF;
     mNode = map_next(map, mNode)) {
-        printf("alias %s='%s'\n",(char *)map_node_key(map, mNode), (char *)map_node_value(map, mNode));
+        printf("->%s='%d'\n", (char *)map_node_key(map, mNode), *(int *)map_node_value(map, mNode));
+    }
+}
+
+void map_insert_to_file(Map map, FILE *file) {
+	char space[2] = " ";
+	char newLine[2] = "\n";
+	char buff[256];
+
+	for(MapNode mNode=map_first(map);
+    mNode != MAP_EOF;
+    mNode = map_next(map, mNode)) {
+		char *key = (char *)map_node_key(map, mNode);
+		int value = *(int *)map_node_value(map, mNode);
+		sprintf(buff, "%d", value);
+		fwrite(key, strlen(key), 1, file);
+		fwrite(space, strlen(space), 1, file);
+		fwrite(buff, strlen(buff), 1, file);
+		fwrite(newLine, strlen(newLine), 1, file);
     }
 }
 

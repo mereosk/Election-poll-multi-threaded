@@ -13,6 +13,12 @@
 #include "helpingFuncs.h"
 #include "ADTVector.h"
 
+char *serverName;
+int portNum;
+struct sockaddr *serverptr;
+struct sockaddr_in server;
+char buf[18];
+
 void perror_exit(char *message);
 
 struct threadInfo {
@@ -22,11 +28,78 @@ struct threadInfo {
 
 typedef struct threadInfo *ThreadInfo;
 
+void get_name_party(char *str, char *name, char *party) {
+    int countSpaces=0;
+    bool flag=false;
+    int i,j=0;
+    for(i=0 ; i<strlen(str)-1 ; i++) {
+        putchar(str[i]);
+        if(str[i] == ' ' && countSpaces==1) {
+            flag=true;
+            continue;
+        }
+
+        if(str[i] == ' ' && countSpaces==0)
+            countSpaces++;
+        
+
+        if(flag==false)
+            name[i] = str[i];
+        else 
+            party[j++] = str[i];
+    }
+}
+
 // This is the thread function
 void *communicate_with_server(void *argp) {
     ThreadInfo info = argp;
+    int sock;
+    struct hostent *rem;
+    char *name = calloc(strlen(info->line),sizeof(char));
+    char *party = calloc(strlen(info->line),sizeof(char));
     printf("Im the newly created thread %ld with the string %s\n", pthread_self(), info->line);
-    return (void*)47;
+    get_name_party(info->line, name, party);
+    printf("Whole line is %s, name is %s and party is %s\n", info->line, name, party);
+
+    /* Create socket */
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    	perror_exit("socket");
+	/* Find server address */
+    if ((rem = gethostbyname(serverName)) == NULL) {	
+	   herror("gethostbyname"); exit(1);
+    }
+    server.sin_family = AF_INET;       /* Internet domain */
+    memcpy(&server.sin_addr, rem->h_addr, rem->h_length);
+    server.sin_port = htons(portNum);         /* Server port */
+    /* Initiate connection */
+    if (connect(sock, serverptr, sizeof(server)) < 0)
+	   perror_exit("connect");
+    // printf("Connecting to %s port %d\n", argv[1], portNum);
+    if(read(sock, buf, sizeof(buf)) < 0)
+        perror_exit("read");
+    if (strcmp(buf, "SEND NAME PLEASE\n") == 0) {
+        if(write(sock, "Konstantinos Mereos", 20) < 0) {
+            perror_exit("write");
+        }
+    } 
+    if(read(sock, buf, sizeof(buf)) < 0)
+        perror_exit("read");
+    if (strcmp(buf, "SEND VOTE PLEASE\n") == 0) {
+        if(write(sock, "SYRIZA", 7) < 0)
+            perror_exit("write");
+    }
+    else if (strcmp(buf, "ALREADY VOTED\n") == 0) {
+        printf("Ending\n");
+    }
+    else {
+        close(sock);
+        printf("buffer is %s\n", buf);
+        fprintf(stderr,"Wrong string sent by server");
+        exit(EXIT_FAILURE);
+    }
+    close(sock);
+    free(name); free(party);
+    return NULL;
 }
 
 void freeThInfo(Pointer value) {
@@ -36,13 +109,10 @@ void freeThInfo(Pointer value) {
 }
 
 int main(int argc, char **argv) {
-    char *serverName, *inputFile;
+    char *inputFile;
     FILE *fd;
-    int portNum, sock, err;
-    char buf[18];
-    struct sockaddr_in server;
-    struct sockaddr *serverptr = (struct sockaddr*)&server;
-    struct hostent *rem;
+    int err;
+    serverptr = (struct sockaddr*)&server;
     size_t len = 0;
     char line[256];
     pthread_t tids;
@@ -105,42 +175,7 @@ int main(int argc, char **argv) {
 
     printf("all threads have terminated\n");
 
-	// /* Create socket */
-    // if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    // 	perror_exit("socket");
-	// /* Find server address */
-    // if ((rem = gethostbyname(serverName)) == NULL) {	
-	//    herror("gethostbyname"); exit(1);
-    // }
-    // server.sin_family = AF_INET;       /* Internet domain */
-    // memcpy(&server.sin_addr, rem->h_addr, rem->h_length);
-    // server.sin_port = htons(portNum);         /* Server port */
-    // /* Initiate connection */
-    // if (connect(sock, serverptr, sizeof(server)) < 0)
-	//    perror_exit("connect");
-    // printf("Connecting to %s port %d\n", argv[1], portNum);
-    // if(read(sock, buf, sizeof(buf)) < 0)
-    //     perror_exit("read");
-    // if (strcmp(buf, "SEND NAME PLEASE\n") == 0) {
-    //     if(write(sock, "Konstantinos Mereos", 20) < 0) {
-    //         perror_exit("write");
-    //     }
-    // } 
-    // if(read(sock, buf, sizeof(buf)) < 0)
-    //     perror_exit("read");
-    // if (strcmp(buf, "SEND VOTE PLEASE\n") == 0) {
-    //     if(write(sock, "SYRIZA", 7) < 0)
-    //         perror_exit("write");
-    // }
-    // else if (strcmp(buf, "ALREADY VOTED\n") == 0) {
-    //     printf("Ending\n");
-    //     close(sock);                 /* Close socket and exit */
-    // }
-    // else {
-    //     close(sock);
-    //     fprintf(stderr,"Wrong string sent by server");
-    //     exit(EXIT_FAILURE);
-    // }
+	
     vector_destroy(threadsVec);
     // free(tids);
     fclose(fd);

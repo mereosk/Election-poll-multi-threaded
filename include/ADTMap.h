@@ -9,6 +9,7 @@
 #pragma once // #include το πολύ μία φορά
 
 #include "common_types.h"
+#include <stdlib.h>
 
 
 // Ενα map αναπαριστάται από τον τύπο Map
@@ -71,6 +72,9 @@ typedef struct map_node* MapNode;
 // Prints the map
 
 void map_print(Map map);
+
+// Writes in file the map data (key and values)
+void map_insert_to_file(Map map, FILE *file);
 
 // Επιστρέφει τον πρώτο κομβο του map, ή MAP_EOF αν το map είναι κενό
 

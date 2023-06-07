@@ -18,6 +18,7 @@
 
 #include "helpingFuncs.h"
 #include "ADTQueue.h"
+#include "ADTMap.h"
 
 #define perror2(s, e) fprintf(stderr, "%s: %s\n", strerror(e));
 
@@ -26,11 +27,14 @@ Queue bufferQueue;
 pthread_t *tids;
 pthread_mutex_t mtx;
 pthread_mutex_t writeMtx;
+pthread_mutex_t mapMtx;
 pthread_cond_t cond_nonempty;
 pthread_cond_t cond_nonfull;
 int numWorkerThreads;
 bool sigintFlag=false;
-static sigset_t signal_mask;  /* signals to block         */
+static sigset_t signal_mask;  // signals to block
+Map statsMap;
+Map checkMap;
 
 int *create_int(int value) {
     int *ret = malloc(sizeof(int));
@@ -76,6 +80,10 @@ void assignHandler() {
     sigaction(SIGINT, &act, NULL);
 }
 
+int str_compare(Pointer a,Pointer b){
+    return strcmp(a, b);
+}
+
 int main(int argc, char **argv) {
     int portnum, bufferSize;
     char *pollLogFile, *pollStatsFile;
@@ -84,6 +92,17 @@ int main(int argc, char **argv) {
     socklen_t clientlen=sizeof(client); ;
     struct sockaddr * serverptr =( struct sockaddr *) & server ;
     struct sockaddr * clientptr =( struct sockaddr *) & client ;
+
+    // Initialise the statsMap. This map will save the stats in order
+    // to write them in the poll-stats.txt after SIGINT. This map
+    // will have the party name as the key and a number as the value
+    // that will give us the # of votes for that specific party
+    statsMap = map_create(str_compare, free, free);
+    // As for the hash function of the map we will use the djb2 hash function
+    map_set_hash_function(statsMap, hash_string);
+
+    checkMap = map_create(str_compare, free, NULL);
+    map_set_hash_function(checkMap, hash_string);
     
     assignHandler();
 
@@ -99,17 +118,16 @@ int main(int argc, char **argv) {
     // if((fdPollLog = open(pollLogFile, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1)   
     //     perror_exit("File opening");
     // printf("The file is %s\n", pollLogFile);
-    if((fdPollLog = fopen(pollLogFile, "a")) == NULL)
+    if((fdPollLog = fopen(pollLogFile, "w")) == NULL)
         perror_exit("File opening");
-    if((fdPollStats = fopen(pollStatsFile, "a")) == NULL)
+    if((fdPollStats = fopen(pollStatsFile, "w")) == NULL)
         perror_exit("File opening");
 
     // Allocate the array of threads
     if((tids=malloc(numWorkerThreads*sizeof(pthread_t)))==NULL)
         perror_exit("malloc");
 
-    int        rc;              /* return code              */
-
+    int rc;     // return code
 
     sigemptyset (&signal_mask);
     sigaddset (&signal_mask, SIGINT);
@@ -193,55 +211,62 @@ int main(int argc, char **argv) {
     }
     free(tids);
 
-     printf("Im here\n");
+    // Write in the poll-stats.txt the data from the map
+    map_insert_to_file(statsMap, fdPollStats);
+
+    printf("Im here\n");
     fclose(fdPollLog); fclose(fdPollStats);
     printf("Im here\n");
     queue_destroy(bufferQueue);
+    map_destroy(statsMap);
+    map_destroy(checkMap);
     printf("Im here\n");
     pthread_cond_destroy(&cond_nonempty);
     pthread_cond_destroy(&cond_nonfull);
     pthread_mutex_destroy(&mtx);
+    pthread_mutex_destroy(&mapMtx);
     pthread_mutex_destroy(&writeMtx);
     printf("Im here\n");
 
     return 0;
 }
 
-void child_server(int newsock) {
-    char sendNameBuff[18]="SEND NAME PLEASE\n";
-    char sendPartyBuff[18]="SEND VOTE PLEASE\n";
-    char nameSurname[64]="";
-    char party[64]="";
-    if(write(newsock, sendNameBuff, 18) < 0) {
-        perror_exit("write");
-    }
-    if(read(newsock, nameSurname, 64) > 0) {  /* Receive 1 char */
-    	// putchar(buf[0]);           /* Print received char */
-        printf("Name is %s\n",nameSurname);
-    	/* Capitalize character */
-    	// buf[0] = toupper(buf[0]);
-    	/* Reply */
-    	// if (write(newsock, buf, 1) < 0)
-    	//     perror_exit("write");
-    }
-    if(write(newsock, sendPartyBuff, 18) < 0) {
-        perror_exit("write");
-    }
-    if(read(newsock, party, 64) > 0) {  /* Receive 1 char */
-    	// putchar(buf[0]);           /* Print received char */
-        printf("Vote is %s\n",party);
-    	/* Capitalize character */
-    	// buf[0] = toupper(buf[0]);
-    	/* Reply */
-    	// if (write(newsock, buf, 1) < 0)
-    	//     perror_exit("write");
-    }
-    printf("Closing connection.\n");
-    close(newsock);	  /* Close socket */
-}
+// void child_server(int newsock) {
+//     char sendNameBuff[18]="SEND NAME PLEASE\n";
+//     char sendPartyBuff[18]="SEND VOTE PLEASE\n";
+//     char nameSurname[64]="";
+//     char party[64]="";
+//     if(write(newsock, sendNameBuff, 18) < 0) {
+//         perror_exit("write");
+//     }
+//     if(read(newsock, nameSurname, 64) > 0) {  /* Receive 1 char */
+//     	// putchar(buf[0]);           /* Print received char */
+//         printf("Name is %s\n",nameSurname);
+//     	/* Capitalize character */
+//     	// buf[0] = toupper(buf[0]);
+//     	/* Reply */
+//     	// if (write(newsock, buf, 1) < 0)
+//     	//     perror_exit("write");
+//     }
+//     if(write(newsock, sendPartyBuff, 18) < 0) {
+//         perror_exit("write");
+//     }
+//     if(read(newsock, party, 64) > 0) {  /* Receive 1 char */
+//     	// putchar(buf[0]);           /* Print received char */
+//         printf("Vote is %s\n",party);
+//     	/* Capitalize character */
+//     	// buf[0] = toupper(buf[0]);
+//     	/* Reply */
+//     	// if (write(newsock, buf, 1) < 0)
+//     	//     perror_exit("write");
+//     }
+//     printf("Closing connection.\n");
+//     close(newsock);	  /* Close socket */
+// }
 
 void *worker_thread(void *value) { 
-    printf ( "Im thread %ld \n " , pthread_self() );
+    while(1) {
+printf ( "Im thread %ld \n " , pthread_self() );
     int socketDes;
     printf("Im in the working thread\n");
     pthread_mutex_lock(&mtx);
@@ -270,6 +295,7 @@ void *worker_thread(void *value) {
     char newLine[2] = "\n";
     char nameSurname[64]="";
     char party[64]="";
+    char *line = calloc(256, sizeof(char));
     if(write(socketDes, sendNameBuff, 18) < 0) {
         perror_exit("write");
     }
@@ -283,11 +309,12 @@ void *worker_thread(void *value) {
         // }   
     	// putchar(buf[0]);           /* Print received char */
         printf("Name is %s with %d\n",nameSurname, strlen(nameSurname)-1);
-
+        strncpy(line, nameSurname, strlen(nameSurname)-2);
+        strcat(line, space);
         // Before writing to the file first lock the mutex
-        pthread_mutex_lock(&writeMtx);
-        fwrite(nameSurname, strlen(nameSurname)-2, 1, fdPollLog);
-        fwrite(space, strlen(space), 1, fdPollLog);
+        // pthread_mutex_lock(&writeMtx);
+        // fwrite(nameSurname, strlen(nameSurname)-2, 1, fdPollLog);
+        // fwrite(space, strlen(space), 1, fdPollLog);
     	/* Capitalize character */
     	// buf[0] = toupper(buf[0]);
     	/* Reply */
@@ -300,10 +327,9 @@ void *worker_thread(void *value) {
     if(read(socketDes, party, 64) > 0) {  /* Receive 1 char */
     	// putchar(buf[0]);           /* Print received char */
         printf("Vote is %s\n",party);
-        fwrite(party, strlen(party)-2, 1, fdPollLog);
-        fwrite(newLine, strlen(newLine), 1, fdPollLog);
-        pthread_mutex_unlock(&writeMtx);
-
+        // fwrite(party, strlen(party)-2, 1, fdPollLog);
+        // fwrite(newLine, strlen(newLine), 1, fdPollLog);
+        strcat(line, party);
         // Initialise a string that will get inserted in the map
         // so that we can print the poll stats
         // char *partyTBInerted;
@@ -311,6 +337,29 @@ void *worker_thread(void *value) {
         // fprintf(stderr,"THE PARTY TO BE INSERTED IS %s OOOOO\n", partyTBInerted);
         party[strlen(party) - 2] = '\0';
         printf("The stirng is %s\n", party);
+        int *value;
+        // Check if the key(party) is in the map
+        pthread_mutex_lock(&mapMtx);
+        if((value=map_find(statsMap, party)) == NULL) {
+            // Party is not in the map so insert it with that value 0
+            map_insert(statsMap, strdup(party), create_int(1));
+        }
+        else {
+            // Party is in the map so add 1 to the value
+            printf("NOW I UP THE VALUE");
+            *value=*value+1;
+        }
+        pthread_mutex_unlock(&mapMtx);
+        map_print(statsMap);
+        // pthread_mutex_unlock(&writeMtx);
+
+        printf("line is %s\n", line);
+        pthread_mutex_lock(&writeMtx);
+        fwrite(line, strlen(line)+1, 1, fdPollLog);
+        pthread_mutex_unlock(&writeMtx);
+
+        free(line);
+
     	/* Capitalize character */
     	// buf[0] = toupper(buf[0]);
     	/* Reply */
@@ -319,6 +368,8 @@ void *worker_thread(void *value) {
     }
     printf("Closing connection.\n");
     close(socketDes);	  /* Close socket */
+    }
+    
 
     return NULL;
 }
