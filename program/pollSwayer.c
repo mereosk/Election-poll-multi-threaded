@@ -32,7 +32,7 @@ void get_name_party(char *str, char *name, char *party) {
     int countSpaces=0;
     bool flag=false;
     int i,j=0;
-    for(i=0 ; i<strlen(str)-1 ; i++) {
+    for(i=0 ; i<strlen(str) ; i++) {
         putchar(str[i]);
         if(str[i] == ' ' && countSpaces==1) {
             flag=true;
@@ -49,6 +49,8 @@ void get_name_party(char *str, char *name, char *party) {
             party[j++] = str[i];
     }
     name[strlen(name)]='\n';
+    if(party[j-1]!='\n')
+        party[j]='\n';
 }
 
 // This is the thread function
@@ -84,7 +86,7 @@ void *communicate_with_server(void *argp) {
         }
     } 
     // memcpy(buf, sizeof(buf), 0);
-    char buffer[128];
+    char buffer[18];
     if(read(sock, buffer, sizeof(buf)) < 0)
         perror_exit("read");
     if (strcmp(buffer, "SEND VOTE PLEASE\n") == 0) {
@@ -140,6 +142,8 @@ int main(int argc, char **argv) {
     int i=0;
     while (fgets(line, 256, fd)) {
         printf("%s", line);
+        if(strcmp(line,"\n")==0)
+            continue;
         
         thInfo = malloc(sizeof(struct threadInfo));
         thInfo->line = strdup(line);

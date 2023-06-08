@@ -35,6 +35,7 @@ bool sigintFlag=false;
 static sigset_t signal_mask;  // signals to block
 Map statsMap;
 Map checkMap;
+int totalVotes = 0;
 
 int *create_int(int value) {
     int *ret = malloc(sizeof(int));
@@ -212,7 +213,7 @@ int main(int argc, char **argv) {
     free(tids);
 
     // Write in the poll-stats.txt the data from the map
-    map_insert_to_file(statsMap, fdPollStats);
+    map_insert_to_file(statsMap, fdPollStats, totalVotes);
 
     printf("Im here\n");
     fclose(fdPollLog); fclose(fdPollStats);
@@ -230,39 +231,6 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
-// void child_server(int newsock) {
-//     char sendNameBuff[18]="SEND NAME PLEASE\n";
-//     char sendPartyBuff[18]="SEND VOTE PLEASE\n";
-//     char nameSurname[64]="";
-//     char party[64]="";
-//     if(write(newsock, sendNameBuff, 18) < 0) {
-//         perror_exit("write");
-//     }
-//     if(read(newsock, nameSurname, 64) > 0) {  /* Receive 1 char */
-//     	// putchar(buf[0]);           /* Print received char */
-//         printf("Name is %s\n",nameSurname);
-//     	/* Capitalize character */
-//     	// buf[0] = toupper(buf[0]);
-//     	/* Reply */
-//     	// if (write(newsock, buf, 1) < 0)
-//     	//     perror_exit("write");
-//     }
-//     if(write(newsock, sendPartyBuff, 18) < 0) {
-//         perror_exit("write");
-//     }
-//     if(read(newsock, party, 64) > 0) {  /* Receive 1 char */
-//     	// putchar(buf[0]);           /* Print received char */
-//         printf("Vote is %s\n",party);
-//     	/* Capitalize character */
-//     	// buf[0] = toupper(buf[0]);
-//     	/* Reply */
-//     	// if (write(newsock, buf, 1) < 0)
-//     	//     perror_exit("write");
-//     }
-//     printf("Closing connection.\n");
-//     close(newsock);	  /* Close socket */
-// }
 
 void *worker_thread(void *value) { 
     while(1) {
@@ -291,6 +259,7 @@ printf ( "Im thread %ld \n " , pthread_self() );
 
     char sendNameBuff[18]="SEND NAME PLEASE\n";
     char sendPartyBuff[18]="SEND VOTE PLEASE\n";
+    char sendAlrVoted[15]="ALREADY VOTED\n";
     char space[2] = " ";
     char newLine[2] = "\n";
     char nameSurname[64]="";
@@ -314,8 +283,29 @@ printf ( "Im thread %ld \n " , pthread_self() );
         // }   
     	// putchar(buf[0]);           /* Print received char */
         printf("Name is %s with %d\n",nameSurname, strlen(nameSurname)-1);
-        // strlen(nameSurname) is the \n character shich we dont to include in the name
-        strncpy(line, nameSurname, strlen(nameSurname)-1);
+        nameSurname[strlen(nameSurname)-1] = '\0';
+
+        // Check if the name is in the checkMap
+        if(map_find(checkMap, nameSurname)!=NULL) {
+            // That means that the name is a duplicate
+
+            // Send the message "ALREADY VOTED"
+            if(write(socketDes, sendAlrVoted, 15) < 0) {
+                perror_exit("write");
+            }
+            // Close the connection
+            free(line);
+            printf("Closing connection.\n");
+            close(socketDes);	  /* Close socket */
+            continue;
+        }
+        // Being here means that the name is not a duplicate
+        // thus we have to insert it in the checkMap
+        char *nameToBeInserted = strdup(nameSurname);
+        char *valueToBeInserted = nameToBeInserted;
+        map_insert(checkMap, nameToBeInserted, valueToBeInserted);
+        
+        strncpy(line, nameSurname, strlen(nameSurname));
         strcat(line, space);
         // Before writing to the file first lock the mutex
         // pthread_mutex_lock(&writeMtx);
@@ -334,6 +324,7 @@ printf ( "Im thread %ld \n " , pthread_self() );
         printf("Vote is %s\n",party);
         // fwrite(party, strlen(party)-2, 1, fdPollLog);
         // fwrite(newLine, strlen(newLine), 1, fdPollLog);
+        party[strlen(party)-1] = '\0';
         strcat(line, party);
         strcat(line, newLine);
         // Initialise a string that will get inserted in the map
@@ -344,6 +335,9 @@ printf ( "Im thread %ld \n " , pthread_self() );
         int *value;
         // Check if the key(party) is in the map
         pthread_mutex_lock(&mapMtx);
+        // Increase the vote counter by 1, here is the perferct spot
+        // because it is protected my a mutex
+        totalVotes++;
         if((value=map_find(statsMap, party)) == NULL) {
             // Party is not in the map so insert it with that value 0
             map_insert(statsMap, strdup(party), create_int(1));

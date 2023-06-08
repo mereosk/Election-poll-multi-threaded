@@ -74,7 +74,7 @@ typedef struct map_node* MapNode;
 void map_print(Map map);
 
 // Writes in file the map data (key and values)
-void map_insert_to_file(Map map, FILE *file);
+void map_insert_to_file(Map map, FILE *file, int totalVotes);
 
 // Επιστρέφει τον πρώτο κομβο του map, ή MAP_EOF αν το map είναι κενό
 

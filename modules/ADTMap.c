@@ -219,10 +219,12 @@ void map_print(Map map) {
     }
 }
 
-void map_insert_to_file(Map map, FILE *file) {
+void map_insert_to_file(Map map, FILE *file, int totalVotes) {
 	char space[2] = " ";
 	char newLine[2] = "\n";
 	char buff[256];
+	char buff1[64];
+	char *totalNumOfVotes = "total_number_of_votes";
 
 	for(MapNode mNode=map_first(map);
     mNode != MAP_EOF;
@@ -235,6 +237,10 @@ void map_insert_to_file(Map map, FILE *file) {
 		fwrite(buff, strlen(buff), 1, file);
 		fwrite(newLine, strlen(newLine), 1, file);
     }
+	sprintf(buff1, "%d", totalVotes);
+	fwrite(buff1, strlen(buff1), 1, file);
+	fwrite(space, strlen(space), 1, file);
+	fwrite(totalNumOfVotes, strlen(totalNumOfVotes), 1, file);
 }
 
 MapNode map_first(Map map) {
