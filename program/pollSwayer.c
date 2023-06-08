@@ -48,6 +48,7 @@ void get_name_party(char *str, char *name, char *party) {
         else 
             party[j++] = str[i];
     }
+    name[strlen(name)]='\n';
 }
 
 // This is the thread function

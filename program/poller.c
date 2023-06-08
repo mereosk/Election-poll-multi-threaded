@@ -299,7 +299,12 @@ printf ( "Im thread %ld \n " , pthread_self() );
     if(write(socketDes, sendNameBuff, 18) < 0) {
         perror_exit("write");
     }
-    if(read(socketDes, nameSurname, 64) > 0) {  /* Receive 1 char */
+    while(read(socketDes, nameSurname, 32) > 0) {  /* Receive 1 char */
+        if(strstr(nameSurname, newLine)) {
+            printf("LKJSADFHLKSDJF IS %s\n", nameSurname);
+            break;
+        }
+    }
         printf("Name is %s\n",nameSurname);
         // for (ssize_t i = 0; i < strlen(nameSurname)+1; i++) {
         //     if (nameSurname[i] == '\n') {
@@ -309,7 +314,8 @@ printf ( "Im thread %ld \n " , pthread_self() );
         // }   
     	// putchar(buf[0]);           /* Print received char */
         printf("Name is %s with %d\n",nameSurname, strlen(nameSurname)-1);
-        strncpy(line, nameSurname, strlen(nameSurname));
+        // strlen(nameSurname) is the \n character shich we dont to include in the name
+        strncpy(line, nameSurname, strlen(nameSurname)-1);
         strcat(line, space);
         // Before writing to the file first lock the mutex
         // pthread_mutex_lock(&writeMtx);
@@ -320,7 +326,6 @@ printf ( "Im thread %ld \n " , pthread_self() );
     	/* Reply */
     	// if (write(newsock, buf, 1) < 0)
     	//     perror_exit("write");
-    }
     if(write(socketDes, sendPartyBuff, 18) < 0) {
         perror_exit("write");
     }
@@ -357,7 +362,6 @@ printf ( "Im thread %ld \n " , pthread_self() );
         fwrite(line, strlen(line), 1, fdPollLog);
         pthread_mutex_unlock(&writeMtx);
 
-        free(line);
 
     	/* Capitalize character */
     	// buf[0] = toupper(buf[0]);
@@ -365,6 +369,7 @@ printf ( "Im thread %ld \n " , pthread_self() );
     	// if (write(newsock, buf, 1) < 0)
     	//     perror_exit("write");
     }
+    free(line);
     printf("Closing connection.\n");
     close(socketDes);	  /* Close socket */
     }
