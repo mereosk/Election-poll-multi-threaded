@@ -309,7 +309,7 @@ printf ( "Im thread %ld \n " , pthread_self() );
         // }   
     	// putchar(buf[0]);           /* Print received char */
         printf("Name is %s with %d\n",nameSurname, strlen(nameSurname)-1);
-        strncpy(line, nameSurname, strlen(nameSurname)-2);
+        strncpy(line, nameSurname, strlen(nameSurname));
         strcat(line, space);
         // Before writing to the file first lock the mutex
         // pthread_mutex_lock(&writeMtx);
@@ -330,13 +330,12 @@ printf ( "Im thread %ld \n " , pthread_self() );
         // fwrite(party, strlen(party)-2, 1, fdPollLog);
         // fwrite(newLine, strlen(newLine), 1, fdPollLog);
         strcat(line, party);
+        strcat(line, newLine);
         // Initialise a string that will get inserted in the map
         // so that we can print the poll stats
         // char *partyTBInerted;
         // memcpy(partyTBInerted, party, strlen(party)-1);
         // fprintf(stderr,"THE PARTY TO BE INSERTED IS %s OOOOO\n", partyTBInerted);
-        party[strlen(party) - 2] = '\0';
-        printf("The stirng is %s\n", party);
         int *value;
         // Check if the key(party) is in the map
         pthread_mutex_lock(&mapMtx);
@@ -355,7 +354,7 @@ printf ( "Im thread %ld \n " , pthread_self() );
 
         printf("line is %s\n", line);
         pthread_mutex_lock(&writeMtx);
-        fwrite(line, strlen(line)+1, 1, fdPollLog);
+        fwrite(line, strlen(line), 1, fdPollLog);
         pthread_mutex_unlock(&writeMtx);
 
         free(line);

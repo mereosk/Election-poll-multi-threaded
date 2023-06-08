@@ -78,17 +78,19 @@ void *communicate_with_server(void *argp) {
     if(read(sock, buf, sizeof(buf)) < 0)
         perror_exit("read");
     if (strcmp(buf, "SEND NAME PLEASE\n") == 0) {
-        if(write(sock, "Konstantinos Mereos", 20) < 0) {
+        if(write(sock, name, strlen(name)) < 0) {
             perror_exit("write");
         }
     } 
-    if(read(sock, buf, sizeof(buf)) < 0)
+    // memcpy(buf, sizeof(buf), 0);
+    char buffer[128];
+    if(read(sock, buffer, sizeof(buf)) < 0)
         perror_exit("read");
-    if (strcmp(buf, "SEND VOTE PLEASE\n") == 0) {
-        if(write(sock, "SYRIZA", 7) < 0)
+    if (strcmp(buffer, "SEND VOTE PLEASE\n") == 0) {
+        if(write(sock, party, strlen(party)) < 0)
             perror_exit("write");
     }
-    else if (strcmp(buf, "ALREADY VOTED\n") == 0) {
+    else if (strcmp(buffer, "ALREADY VOTED\n") == 0) {
         printf("Ending\n");
     }
     else {
