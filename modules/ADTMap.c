@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ADTMap.h"
 
@@ -309,4 +310,8 @@ uint hash_int(Pointer value) {
 
 uint hash_pointer(Pointer value) {
 	return (size_t)value;				// cast σε sizt_t, που έχει το ίδιο μήκος με έναν pointer
+}
+
+int str_compare(Pointer a,Pointer b) {
+    return strcmp(a, b);
 }

@@ -9,3 +9,7 @@ int *numWorkerThreads, int *bufferSize, char **pollLogFile, char **pollStatsFile
 bool checkArgumentsClient(int argc, char **argv, char **serverName, int *portNum, char **inputFile);
 
 bool readSocket(int socketDes, char *str);
+
+void perror_exit(char *message);
+
+void get_name_party(char *str, char *name, char *party);

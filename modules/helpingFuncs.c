@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "helpingFuncs.h"
 
 #define MAXSIZE 64
+
 
 bool checkArgumentsServer(int argc, char **argv, int *portnum, int *numWorkerThreads, int *bufferSize, char **pollLogFile, char **pollStatsFile) {
     // Check that the arguments are 6, the correct format is:
@@ -86,4 +88,33 @@ bool readSocket(int socketDes, char *str) {
     }
 
     return true;
+}
+
+void perror_exit(char *message) {
+    perror(message);
+    exit(EXIT_FAILURE);
+}
+
+void get_name_party(char *str, char *name, char *party) {
+    int countSpaces=0;
+    bool flag=false;
+    int i,j=0;
+    for(i=0 ; i<strlen(str) ; i++) {
+        if(str[i] == ' ' && countSpaces==1) {
+            flag=true;
+            continue;
+        }
+
+        if(str[i] == ' ' && countSpaces==0)
+            countSpaces++;
+        
+
+        if(flag==false)
+            name[i] = str[i];
+        else 
+            party[j++] = str[i];
+    }
+    name[strlen(name)]='\n';
+    if(party[j-1]!='\n')
+        party[j]='\n';
 }

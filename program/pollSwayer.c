@@ -19,45 +19,81 @@ struct sockaddr *serverptr;
 struct sockaddr_in server;
 char buf[18];
 
-void perror_exit(char *message);
-
 struct threadInfo {
-    pthread_t threadId;        // ID returned by pthread_create()
-    char *line;      // From reading a line of inputFile
+    pthread_t threadId;       // ID returned by pthread_create()
+    char *line;               // From reading a line of inputFile
 };
 
 typedef struct threadInfo *ThreadInfo;
 
-void get_name_party(char *str, char *name, char *party) {
-    int countSpaces=0;
-    bool flag=false;
-    int i,j=0;
-    for(i=0 ; i<strlen(str) ; i++) {
-        if(str[i] == ' ' && countSpaces==1) {
-            flag=true;
-            continue;
-        }
+// This is the thread function
+void *communicate_with_server(void *argp);
+void freeThInfo(Pointer value);
 
-        if(str[i] == ' ' && countSpaces==0)
-            countSpaces++;
-        
+int main(int argc, char **argv) {
+    char *inputFile;
+    FILE *fd;
+    int err;
+    serverptr = (struct sockaddr*)&server;
+    char line[256];
+    Vector threadsVec = vector_create(0, freeThInfo);
+    ThreadInfo thInfo;
 
-        if(flag==false)
-            name[i] = str[i];
-        else 
-            party[j++] = str[i];
+    if(checkArgumentsClient(argc, argv, &serverName, &portNum, &inputFile) == false)
+        exit(EXIT_FAILURE);
+
+    
+    // Open input file
+    if((fd = fopen(inputFile, "r"))==NULL) {
+        perror_exit("File opening");
     }
-    name[strlen(name)]='\n';
-    if(party[j-1]!='\n')
-        party[j]='\n';
+    // Read the file line by line
+    int i=0;
+    while (fgets(line, 256, fd)) {
+        if(strcmp(line,"\n")==0)
+            continue;
+        
+        thInfo = malloc(sizeof(struct threadInfo));
+        thInfo->line = strdup(line);
+        // join later in the process
+        // Create the thread that will work on line
+        if(err = pthread_create(&(thInfo->threadId), NULL, communicate_with_server, thInfo)) {
+            perror2("pthread_create", err);
+            exit(EXIT_FAILURE);
+        }
+        // Insert the tid in the threadVector so that we can 
+        
+        vector_insert_last(threadsVec, thInfo);
+        i++;
+    }
+    int status;
+
+    // Loop through the vector and use pthread join in order to 
+    // wait for the threads termination
+    for(VectorNode vnode=vector_first(threadsVec); 
+        vnode!=VECTOR_EOF;
+        vnode = vector_next(threadsVec, vnode)) {
+            ThreadInfo tempThInfo = (ThreadInfo)vector_node_value(threadsVec, vnode);
+            pthread_t tempTid = tempThInfo->threadId;
+            if(err = pthread_join(tempTid, (void **) &status)) {
+                perror2("pthread_join", err);
+                exit(EXIT_FAILURE);
+            }
+    } 
+
+    printf("all threads have terminated\n");
+
+	
+    vector_destroy(threadsVec);
+    fclose(fd);
+    
+    return 0;
 }
 
-// This is the thread function
 void *communicate_with_server(void *argp) {
     ThreadInfo info = argp;
     int sock;
     struct hostent *rem;
-    char newLine[2] = "\n";
     char *name = calloc(strlen(info->line),sizeof(char));
     char *party = calloc(strlen(info->line),sizeof(char));
     get_name_party(info->line, name, party);
@@ -114,83 +150,4 @@ void freeThInfo(Pointer value) {
     ThreadInfo valuee = (ThreadInfo)value;
     free(valuee->line);
     free(valuee);
-}
-
-int main(int argc, char **argv) {
-    char *inputFile;
-    FILE *fd;
-    int err;
-    serverptr = (struct sockaddr*)&server;
-    size_t len = 0;
-    char line[256];
-    pthread_t tids;
-    Vector threadsVec = vector_create(0, freeThInfo);
-    ThreadInfo thInfo;
-
-    if(checkArgumentsClient(argc, argv, &serverName, &portNum, &inputFile) == false)
-        exit(EXIT_FAILURE);
-    
-    // if((tids = malloc(10*sizeof(pthread_t)))==NULL){
-    //     perror("malloc");
-    //     exit(EXIT_FAILURE);
-    // }
-    
-    // Open input file
-    if((fd = fopen(inputFile, "r"))==NULL) {
-        perror_exit("File opening");
-    }
-    // Read the file line by line
-    int i=0;
-    while (fgets(line, 256, fd)) {
-        if(strcmp(line,"\n")==0)
-            continue;
-        
-        thInfo = malloc(sizeof(struct threadInfo));
-        thInfo->line = strdup(line);
-        // join later in the process
-        // Create the thread that will work on line
-        if(err = pthread_create(&(thInfo->threadId), NULL, communicate_with_server, thInfo)) {
-            perror2("pthread_create", err);
-            exit(EXIT_FAILURE);
-        }
-        // Insert the tid in the threadVector so that we can 
-        
-        vector_insert_last(threadsVec, thInfo);
-        i++;
-    }
-    int status;
-
-    // for(int i=0 ; i<10 ; i++){
-    //     if(err = pthread_join(*(tids+i), (void **) &status)) {
-    //         perror2("pthread_join", err);
-    //         exit(EXIT_FAILURE);
-    //     }
-    // }
-    // Loop through the vector and use pthread join in order to 
-    // wait for the threads termination
-    for(VectorNode vnode=vector_first(threadsVec); 
-        vnode!=VECTOR_EOF;
-        vnode = vector_next(threadsVec, vnode)) {
-            ThreadInfo tempThInfo = (ThreadInfo)vector_node_value(threadsVec, vnode);
-            pthread_t tempTid = tempThInfo->threadId;
-            if(err = pthread_join(tempTid, (void **) &status)) {
-                perror2("pthread_join", err);
-                exit(EXIT_FAILURE);
-            }
-    } 
-
-    printf("all threads have terminated\n");
-
-	
-    vector_destroy(threadsVec);
-    // free(tids);
-    fclose(fd);
-    
-    return 0;
-}
-
-void perror_exit(char *message)
-{
-    perror(message);
-    exit(EXIT_FAILURE);
 }
