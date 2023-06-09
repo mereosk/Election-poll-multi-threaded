@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "helpingFuncs.h"
+
+#define MAXSIZE 64
 
 bool checkArgumentsServer(int argc, char **argv, int *portnum, int *numWorkerThreads, int *bufferSize, char **pollLogFile, char **pollStatsFile) {
     // Check that the arguments are 6, the correct format is:
@@ -51,5 +54,36 @@ bool checkArgumentsClient(int argc, char **argv, char **serverName, int *portNum
     *inputFile = argv[3];
 
     // The arguments were correct
+    return true;
+}
+
+bool readSocket(int socketDes, char *str) {
+    char newLine[2]="\n";
+    char tempBuffer[MAXSIZE]="";
+    int bytes;
+    while ((bytes = read(socketDes, tempBuffer, MAXSIZE - 1)) > 0) {
+        tempBuffer[bytes] = '\0'; // Terminate the buffer with a null character
+
+        if (strlen(str) + bytes < MAXSIZE) {
+            strcat(str, tempBuffer);
+        } 
+        // else {
+        //     // Buffer overflow occurred, handle the error
+        //     fprintf(stderr, "Buffer overflow occurredSDKJFHASDKJFHLADSKFHASDLKFHDAKSLJHLASDKHLASDHFSDAJHFLKASDJF\n");
+        //     return -1;
+        // }
+
+        if (strstr(str, newLine) != NULL) {
+            // Newline found, exit the loop
+            break;
+        }
+    }
+
+    if (bytes == -1) {
+        // Error occurred during read, handle the error
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
+
     return true;
 }

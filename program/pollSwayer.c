@@ -33,7 +33,6 @@ void get_name_party(char *str, char *name, char *party) {
     bool flag=false;
     int i,j=0;
     for(i=0 ; i<strlen(str) ; i++) {
-        putchar(str[i]);
         if(str[i] == ' ' && countSpaces==1) {
             flag=true;
             continue;
@@ -58,11 +57,10 @@ void *communicate_with_server(void *argp) {
     ThreadInfo info = argp;
     int sock;
     struct hostent *rem;
+    char newLine[2] = "\n";
     char *name = calloc(strlen(info->line),sizeof(char));
     char *party = calloc(strlen(info->line),sizeof(char));
-    printf("Im the newly created thread %ld with the string %s\n", pthread_self(), info->line);
     get_name_party(info->line, name, party);
-    printf("Whole line is %s, name is %s and party is %s\n", info->line, name, party);
 
     /* Create socket */
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -77,7 +75,6 @@ void *communicate_with_server(void *argp) {
     /* Initiate connection */
     if (connect(sock, serverptr, sizeof(server)) < 0)
 	   perror_exit("connect");
-    // printf("Connecting to %s port %d\n", argv[1], portNum);
     if(read(sock, buf, sizeof(buf)) < 0)
         perror_exit("read");
     if (strcmp(buf, "SEND NAME PLEASE\n") == 0) {
@@ -85,7 +82,6 @@ void *communicate_with_server(void *argp) {
             perror_exit("write");
         }
     } 
-    // memcpy(buf, sizeof(buf), 0);
     char buffer[18];
     if(read(sock, buffer, sizeof(buf)) < 0)
         perror_exit("read");
@@ -95,6 +91,9 @@ void *communicate_with_server(void *argp) {
     }
     else if (strcmp(buffer, "ALREADY VOTED\n") == 0) {
         printf("Ending\n");
+        close(sock);
+        free(name); free(party);
+        return NULL;
     }
     else {
         close(sock);
@@ -102,6 +101,10 @@ void *communicate_with_server(void *argp) {
         fprintf(stderr,"Wrong string sent by server");
         exit(EXIT_FAILURE);
     }
+
+    char lastMessageBuffer[128]="";
+    readSocket(sock, lastMessageBuffer);
+
     close(sock);
     free(name); free(party);
     return NULL;
@@ -124,8 +127,6 @@ int main(int argc, char **argv) {
     Vector threadsVec = vector_create(0, freeThInfo);
     ThreadInfo thInfo;
 
-    printf("Im in the poll swayer\n");
-
     if(checkArgumentsClient(argc, argv, &serverName, &portNum, &inputFile) == false)
         exit(EXIT_FAILURE);
     
@@ -141,7 +142,6 @@ int main(int argc, char **argv) {
     // Read the file line by line
     int i=0;
     while (fgets(line, 256, fd)) {
-        printf("%s", line);
         if(strcmp(line,"\n")==0)
             continue;
         
@@ -153,7 +153,6 @@ int main(int argc, char **argv) {
             perror2("pthread_create", err);
             exit(EXIT_FAILURE);
         }
-        // printf("TIDS is %d",(int)tids);
         // Insert the tid in the threadVector so that we can 
         
         vector_insert_last(threadsVec, thInfo);
