@@ -9,7 +9,7 @@
 #define MAXSIZE 64
 
 
-bool checkArgumentsServer(int argc, char **argv, int *portnum, int *numWorkerThreads, int *bufferSize, char **pollLogFile, char **pollStatsFile) {
+bool check_arguments_server(int argc, char **argv, int *portnum, int *numWorkerThreads, int *bufferSize, char **pollLogFile, char **pollStatsFile) {
     // Check that the arguments are 6, the correct format is:
     // ./poller [portnum] [numWorkerthreads] [bufferSize] [poll-log] [poll-stats]
     if( argc!=6 ) {
@@ -39,7 +39,7 @@ bool checkArgumentsServer(int argc, char **argv, int *portnum, int *numWorkerThr
     return true;
 }
 
-bool checkArgumentsClient(int argc, char **argv, char **serverName, int *portNum, char **inputFile) {
+bool check_arguments_client(int argc, char **argv, char **serverName, int *portNum, char **inputFile) {
     // Check that the arguments are 4, the correct format is:
     // ./pollSwayer [serverName] [portNum] [inputFile.txt]
     if( argc!=4 ) {
@@ -59,7 +59,7 @@ bool checkArgumentsClient(int argc, char **argv, char **serverName, int *portNum
     return true;
 }
 
-bool readSocket(int socketDes, char *str) {
+bool read_socket(int socketDes, char *str) {
     char newLine[2]="\n";
     char tempBuffer[MAXSIZE]="";
     int bytes;
@@ -69,11 +69,11 @@ bool readSocket(int socketDes, char *str) {
         if (strlen(str) + bytes < MAXSIZE) {
             strcat(str, tempBuffer);
         } 
-        // else {
-        //     // Buffer overflow occurred, handle the error
-        //     fprintf(stderr, "Buffer overflow occurredSDKJFHASDKJFHLADSKFHASDLKFHDAKSLJHLASDKHLASDHFSDAJHFLKASDJF\n");
-        //     return -1;
-        // }
+        else {
+            // Buffer overflow occurred, handle the error
+            fprintf(stderr, "Buffer overflow occurred\n");
+            return false;
+        }
 
         if (strstr(str, newLine) != NULL) {
             // Newline found, exit the loop
@@ -99,22 +99,30 @@ void get_name_party(char *str, char *name, char *party) {
     int countSpaces=0;
     bool flag=false;
     int i,j=0;
+    // Run through the string
     for(i=0 ; i<strlen(str) ; i++) {
+        // If it encounters the second space that means that
+        // the name surname part is over
         if(str[i] == ' ' && countSpaces==1) {
             flag=true;
             continue;
         }
 
+        // If it encounters the first space continue to
+        // take the surname too
         if(str[i] == ' ' && countSpaces==0)
             countSpaces++;
         
-
+        // When flag is false insert the char to name
+        // and when it is true insert it to party
         if(flag==false)
             name[i] = str[i];
         else 
             party[j++] = str[i];
     }
+    // In the end of name put \n
     name[strlen(name)]='\n';
+    // If it doesn't already have it put \n in the end of party
     if(party[j-1]!='\n')
         party[j]='\n';
 }

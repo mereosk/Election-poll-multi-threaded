@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
     
     assignHandler();
 
-    // Check if the arguments are correct and in the correct order
-    if(checkArgumentsServer(argc, argv, &portnum, &numWorkerThreads, \
+    // Check if the arguments are correct and are given in the correct order
+    if(check_arguments_server(argc, argv, &portnum, &numWorkerThreads, \
         &bufferSize, &pollLogFile, &pollStatsFile) == false)
         exit(EXIT_FAILURE);
 
@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     // Listen for connections
     if (listen(sock, 128) < 0) 
         perror_exit("listen");
-    printf("Listening for connections to port %d\n", portnum);
+    printf("\033[1;32mListening for connections to port %d\033[0m\n", portnum);
     while (1) {
         // Master thread accepts connection
     	if ((newsock = accept(sock, (struct sockaddr *)clientptr, &clientlen)) < 0) {
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
         while(queue_full(bufferQueue)) {
             // When the queue is full wait for the workers finish
             // their job but with 'wait' it doesn't do busy waiting
-            printf("The buffer is full\n");
+            printf("\033[1;36mBuffer is full\033[0m\n");
             pthread_cond_wait(&cond_nonfull, &mtx);
         }
         // Insert the newsock in the queue and inform the workers who
@@ -204,7 +204,7 @@ void *worker_thread(void *value) {
         while(queue_empty(bufferQueue)) {
             // Wait when the buffer is empty for a signal from the master
             // thread, but in this way we don't do busy waiting
-            printf("Buffer is empty\n");
+            printf("\033[1;35mBuffer is empty\033[0m\n");
             pthread_cond_wait(&cond_nonempty, &mtx);
             // When the sigintFlag is true that means that a sigint has
             // been received and the worker has to return
@@ -238,7 +238,7 @@ void *worker_thread(void *value) {
         }
 
         // Read the name surname from the socket
-        readSocket(socketDes, nameSurname);
+        read_socket(socketDes, nameSurname);
         // The last character of the name surname will be \n
         // replace it with \0
         nameSurname[strlen(nameSurname)-1] = '\0';
@@ -257,7 +257,6 @@ void *worker_thread(void *value) {
             }
             // Close the connection
             free(line);
-            printf("Closing connection.\n");
             close(socketDes);	  /* Close socket */
 
             pthread_mutex_unlock(&checkMapMtx);
@@ -283,7 +282,7 @@ void *worker_thread(void *value) {
         }
 
         // Read the vote from the socket
-        readSocket(socketDes, party);
+        read_socket(socketDes, party);
         // The last character of the vote will be \n
         // replace it with \0
         party[strlen(party)-1] = '\0';
@@ -326,7 +325,6 @@ void *worker_thread(void *value) {
 
         free(lastMessage);
         free(line);
-        printf("Closing connection.\n");
         close(socketDes);	  // Close socket
     }
     
