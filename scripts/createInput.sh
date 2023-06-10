@@ -1,10 +1,33 @@
 #!/bin/bash
 
+# This function generates a random string 3-12 characters long
+generate_rand_name() {
+    # Random number between 3-12
+    len=$(( RANDOM % 10 + 3 ))
+
+    # Define the chars that can be used in the random string
+    lowerCharacters="abcdefghijklmnopqrstuvwxyz"
+    upperCharacters="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    random_string=""
+    # First character will be uppercase
+    randChar="${upperCharacters:RANDOM%${#upperCharacters}:1}"
+    randName="${randName}${random_character}"
+    # All the other characters will be lowercase
+    counter=0
+    while [ $counter -lt $len ]; do
+        randChar="${lowerCharacters:RANDOM%${#lowerCharacters}:1}"
+        randName="${randName}${randChar}"
+        counter=$((counter + 1))
+    done
+
+    # Output the random string
+    echo "$randName"
+}
+
 politicalParties=$1
 numLines=$2
 inputFile="../misc/inputFile.txt"
-greekNames="../misc/greekNames.txt"
-greekSurnames="../misc/greekSurnames.txt"
 
 # Check if the number of arguments is 2
 if [ $# -ne 2 ]; then
@@ -30,9 +53,9 @@ fi
 : > $inputFile
 
 for i in `seq 1 $numLines`; do
-    line=`shuf -n 1 $greekNames`
+    line="$(generate_rand_name)"
     line+=" "
-    line+=`shuf -n 1 $greekSurnames`
+    line+="$(generate_rand_name)"
     line+=" "
     line+=`shuf -n 1 $politicalParties`
     
