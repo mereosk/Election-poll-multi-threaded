@@ -37,7 +37,7 @@ do
   line="${m}"
   line+=" "
   # This will be the number of occurencies of the party
-  line+=`grep ${m} $inputFile | wc -l`
+  line+=`grep -w ${m} $inputFile | wc -l`
   echo "$line" >> "$tallyResultsFile"
 done
 
