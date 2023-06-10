@@ -9,10 +9,10 @@ generate_rand_name() {
     lowerCharacters="abcdefghijklmnopqrstuvwxyz"
     upperCharacters="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-    random_string=""
+    randName=""
     # First character will be uppercase
     randChar="${upperCharacters:RANDOM%${#upperCharacters}:1}"
-    randName="${randName}${random_character}"
+    randName="${randName}${randChar}"
     # All the other characters will be lowercase
     counter=0
     while [ $counter -lt $len ]; do
