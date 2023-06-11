@@ -192,6 +192,8 @@ int main(int argc, char **argv) {
     pthread_mutex_destroy(&checkMapMtx);
     pthread_mutex_destroy(&writeMtx);
 
+    printf("\033[1;32m\nThe End. Bye Bye!\033[0m\n");
+
     return 0;
 }
 

@@ -9,8 +9,8 @@ CC = gcc
 # Compile options. Το -I<dir> λέει στον compiler να αναζητήσει εκεί include files
 CFLAGS = -w -I$(INCLUDE)
 LDFLAGS = 
-ARGSSERVER = 5635 5 10 $(MISC)/poll-log.txt $(MISC)/poll-stats.txt
-ARGSCLIENT = mereosk-Latitude-E7440 5635 $(MISC)/inputFile.txt
+ARGSSERVER = 5636 5 10 $(MISC)/poll-log.txt $(MISC)/poll-stats.txt
+ARGSCLIENT = DESKTOP 5636 $(MISC)/inputFile.txt
 
 # Αρχεία .o
 OBJSSERVER = $(PROGRAM)/poller.o $(MODULES)/ADTList.o $(MODULES)/ADTVector.o $(MODULES)/ADTMap.o $(MODULES)/ADTQueue.o $(MODULES)/helpingFuncs.o

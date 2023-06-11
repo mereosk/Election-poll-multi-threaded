@@ -56,9 +56,6 @@ make valclient για να εκτελεστούν τα προγράμματα μ
       diff pollerResultsFile.txt tallyResultsFile.txt 
       και βλέπω ότι δεν υπάρχει διαφορά
     ~ Εκτελώ (μέσα στο φάκελο misc)
-      diff pollerResultsFile.txt tallyResultsFile.txt 
-      και βλέπω ότι δεν υπάρχει διαφορά
-    ~ Εκτελώ (μέσα στο φάκελο misc)
       sort poll-stats.txt > 1.txt ; diff tallyResultsFile.txt 1.txt ;diff pollerResultsFile.txt 1.txt
       Το οποίο βγάζει κάτι του τύπου
       0a1
