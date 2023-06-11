@@ -205,6 +205,10 @@ void *worker_thread(void *value) {
             // Wait when the buffer is empty for a signal from the master
             // thread, but in this way we don't do busy waiting
             printf("\033[1;35mBuffer is empty\033[0m\n");
+            if(sigintFlag==true) {
+                pthread_mutex_unlock(&mtx);
+                return NULL;
+            }
             pthread_cond_wait(&cond_nonempty, &mtx);
             // When the sigintFlag is true that means that a sigint has
             // been received and the worker has to return
@@ -217,9 +221,10 @@ void *worker_thread(void *value) {
         // Get the socket descriptor from the queue
         socketDes=*(int *)queue_front(bufferQueue);
         queue_remove_front(bufferQueue);
-        pthread_mutex_unlock(&mtx);
 
         pthread_cond_signal(&cond_nonfull);
+        pthread_mutex_unlock(&mtx);
+
 
         char sendNameBuff[18]="SEND NAME PLEASE\n";
         char sendPartyBuff[18]="SEND VOTE PLEASE\n";
